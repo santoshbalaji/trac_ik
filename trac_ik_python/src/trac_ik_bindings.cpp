@@ -9,16 +9,28 @@
 
 #include <Eigen/Dense>
 #include <memory>
+#include <vector>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/stl.h>
 #include <pybind11/detail/common.h>
 
 namespace py = pybind11;
 
+/*
+  * This class acts as a interface for allowing python codes to access c++ functions
+  * for computing forward kinematics (KDL based) and inverse kinematics (Trac IK based)
+  */
 class TrackIKBindings
 {
 public:
+  /*
+    * @param node_name(string) - name to be used by logger
+    * @param urdf(string) - urdf of the robot arm for which kinematics will be computed
+    * @param base_link(string) - frame to be considered as base of the robot
+    * @param tip_link(string) - frame to be considered as tool tip of the robot
+  */
   TrackIKBindings(
     const std::string& node_name,
     const std::string& urdf,
@@ -50,6 +62,11 @@ public:
       base_link, tip_link, urdf, 0.005, 1e-5);
   }
 
+  /*
+    * @brief method for computing forward kinematics
+    * @param joints(Eigen::VectorXd) - joint angles in radians for robot arm
+    * @return Eigen::VectorXd - cartesian position of the robot tool tip with respect to base
+  */
   Eigen::VectorXd perform_forward_kinematics(
     const Eigen::VectorXd joints)
   {
@@ -91,6 +108,12 @@ public:
     return point;
   }
 
+  /*
+    * @brief method for computing inverse kinematics
+    * @param current_joints(Eigen::VectorXd) - current joint angles in radians for robot arm (seeding)
+    * @param cartesian_position(Eigen::VectorXd) - cartesian pose of tool tip of robot arm with respect to base (seeding)
+    * @return Eigen::VectorXd - joint position for robot arm
+  */
   Eigen::VectorXd perform_inverse_kinematics_trac_ik(
     const Eigen::VectorXd current_joints,
     const Eigen::VectorXd cartesian_position)
@@ -140,6 +163,63 @@ public:
     return joint;
   }
 
+  /*
+   * @brief function for getting joints limits pre-set via urdf
+   * @return std::vector<Eigen::VectorXd> - vector of joint limits in radians (lower bound, upper bound)
+  */
+  std::vector<Eigen::VectorXd> get_joint_limits()
+  {
+    std::vector<Eigen::VectorXd> joint_limits;
+
+    KDL::JntArray 
+      current_lb(chain_ptr_->getNrOfJoints()),
+      current_ub(chain_ptr_->getNrOfJoints());
+    if (!trac_ik_solver_ptr_->getKDLLimits(current_lb, current_ub))
+    {
+      RCLCPP_ERROR(rclcpp::get_logger(node_name_), "failed to get joint limits");
+    }
+    else
+    {
+      Eigen::VectorXd lb(chain_ptr_->getNrOfJoints());
+      Eigen::VectorXd ub(chain_ptr_->getNrOfJoints());
+
+      for (unsigned int i = 0; i < chain_ptr_->getNrOfJoints(); i++)
+      {
+        lb(i) = current_lb(i);
+        ub(i) = current_ub(i);
+      }
+      joint_limits.push_back(lb);
+      joint_limits.push_back(ub);
+    }
+
+    return joint_limits;
+  }
+
+  /*
+   * @brief function for setting limits for joints
+   * @param upper_boundary(Eigen::VectorXd) - upper limit for the joints
+   * @param lower boundary(Eigen::VectorXd) - lower limit for the joints  
+   */
+  bool set_joint_limits(Eigen::VectorXd lower_boundary, Eigen::VectorXd upper_boundary)
+  {
+    KDL::JntArray 
+      current_lb(chain_ptr_->getNrOfJoints()),
+      current_ub(chain_ptr_->getNrOfJoints());
+    
+    for (unsigned int i = 0; i < lower_boundary.rows(); i++)
+    {
+      current_lb(i) = lower_boundary(i);
+      current_ub(i) = upper_boundary(i);
+    }
+
+    if (!trac_ik_solver_ptr_->setKDLLimits(current_lb, current_ub))
+    {
+      RCLCPP_ERROR(rclcpp::get_logger(node_name_), "failed to set joint limits");
+      return false;
+    }
+    return true;
+  }
+
 private:
   std::unique_ptr<KDL::Chain> chain_ptr_;
   std::unique_ptr<TRAC_IK::TRAC_IK> trac_ik_solver_ptr_;
@@ -157,5 +237,8 @@ PYBIND11_MODULE(trac_ik_python_module, m)
     .def("perform_forward_kinematics", &TrackIKBindings::perform_forward_kinematics,
       py::arg("joints"), "return cartesian poses")
     .def("perform_inverse_kinematics_trac_ik", &TrackIKBindings::perform_inverse_kinematics_trac_ik,
-      py::arg("current_joints"), py::arg("cartesian_position"), "return joint values");
+      py::arg("current_joints"), py::arg("cartesian_position"), "return joint values")
+    .def("get_joint_limits", &TrackIKBindings::get_joint_limits, "return limits for joints")
+    .def("set_joint_limits", &TrackIKBindings::set_joint_limits,
+      py::arg("lower_boundary"), py::arg("upper_boundary"), "set joint limits");
 }

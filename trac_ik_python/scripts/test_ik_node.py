@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import math
 import time
 
@@ -14,25 +13,18 @@ class IKNode(Node):
     def __init__(self):
         super().__init__('test_ik_node')
 
-        # Declare parameters with defaults (can be overridden by launch file)
         self.declare_parameter('robot_description', '')
-
-        # Get parameter values
         self.robot_description: str = self.get_parameter('robot_description').get_parameter_value().string_value
 
-        # Basic sanity checks
-        if not self.robot_description:
-            self.get_logger().error("robot_description parameter is empty. Did the launch file pass the xacro?")
-        else:
-            self.get_logger().info(f"Received robot_description of length {len(self.robot_description)}")
         try:
-            self.tracik = trac_ik_python_module.TrackIKBindings(
+            self.trac_ik = trac_ik_python_module.TrackIKBindings(
                 "test_ik_node", self.robot_description, "base", "tool0")
-            self.get_logger().info("TRAC-IK C++ wrapper initialized.")
+            self.get_logger().info("trac-ik C++ wrapper initialized")
         except Exception as e:
-            self.get_logger().error(f"Failed to init TRAC-IK wrapper: {e}")
+            self.get_logger().error(f"failed to init trac-ik wrapper: {e}")
 
-        self.create_timer(1.0, self._tick)
+        self.create_timer(0.2, self._tick)
+
 
     def _tick(self):
         self.get_logger().info("tick executed")
@@ -41,7 +33,7 @@ class IKNode(Node):
 
         self.get_logger().info("computing inverse kinematics")
         start_time = time.perf_counter()
-        result = self.tracik.perform_inverse_kinematics_trac_ik(current_position, cartesian_position)
+        result = self.trac_ik.perform_inverse_kinematics_trac_ik(current_position, cartesian_position)
         end_time = time.perf_counter()
         total_time = end_time - start_time
         self.get_logger().info("total time: " + str(total_time))
@@ -60,7 +52,7 @@ class IKNode(Node):
              math.radians(-212.62),
              math.radians(-110.76), 
              math.radians(5.27)], dtype=float)
-        result = self.tracik.perform_forward_kinematics(current_position)
+        result = self.trac_ik.perform_forward_kinematics(current_position)
         self.get_logger().info("x: " + str(result[0]))
         self.get_logger().info("y: " + str(result[1]))
         self.get_logger().info("z: " + str(result[2]))
@@ -68,6 +60,28 @@ class IKNode(Node):
         self.get_logger().info("ry: " + str(result[4]))
         self.get_logger().info("rz: " + str(result[5]))
         self.get_logger().info("rw: " + str(result[6]))
+
+        self.get_logger().info("setting joint limits")
+        lower_boundary = np.array(
+            [math.radians(-180.00), 
+             math.radians(-180.00), 
+             math.radians(-180.00), 
+             math.radians(-180.00),
+             math.radians(-180.00), 
+             math.radians(-180.00)], dtype=float)
+        upper_boundary = np.array(
+            [math.radians(180.00), 
+             math.radians(180.00), 
+             math.radians(180.00), 
+             math.radians(180.00),
+             math.radians(180.00), 
+             math.radians(180.00)], dtype=float)
+        result = self.trac_ik.set_joint_limits(lower_boundary, upper_boundary)
+        self.get_logger().info(str(result))
+
+        self.get_logger().info("getting joint limits")
+        result = self.trac_ik.get_joint_limits()
+        self.get_logger().info("joint limits: " + str(result))
 
 
 def main():
