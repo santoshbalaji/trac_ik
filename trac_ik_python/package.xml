@@ -2,17 +2,19 @@
 <package format="3">
   <name>trac_ik_python</name>
   <version>0.1.0</version>
-  <description>pybind11 Python bindings for TRAC-IK (ROS 2), with a sample rclpy node.</description>
+  <description>kinematics for python based on kdl and trac_ik library</description>
 
   <maintainer email="santechselva@gmail.com">Santosh Balaji Selvaraj</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
-  <!-- Build deps -->
   <depend>pybind11_vendor</depend>
+  <depend>pybind11</depend>
   <depend>trac_ik_lib</depend>
   <depend>orocos_kdl</depend>
+  <depend>kdl_parser</depend>
   <depend>eigen</depend>
 
   <!-- Runtime for the sample node -->

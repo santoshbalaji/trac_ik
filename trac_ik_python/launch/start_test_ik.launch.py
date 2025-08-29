@@ -4,7 +4,6 @@ from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitut
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-import xacro
 
 def generate_launch_description():    
     urdf_package = 'hrc_description'
@@ -13,7 +12,7 @@ def generate_launch_description():
     pkg_share_description = FindPackageShare(urdf_package)
     default_urdf_model_path = PathJoinSubstitution(
         [pkg_share_description, 'urdf', urdf_filename])
-    
+
     urdf_model = LaunchConfiguration('urdf_model')
 
     declare_urdf_model_path_cmd = DeclareLaunchArgument(
@@ -31,22 +30,31 @@ def generate_launch_description():
         ]
     )
 
-    # Node with parameters
+    # node with parameters
     ik_node = Node(
         package='trac_ik_python',
         executable='test_ik_node.py',
         output='screen',
         parameters=[{
-            'robot_description': robot_description_content
+            'robot_description': robot_description_content,
+            'base_link': 'base',
+            'tip_link': 'tool0',
+            'joint_names': [
+                'shoulder_pan_joint',
+                'shoulder_lift_joint',
+                'elbow_joint',
+                'wrist_1_joint',
+                'wrist_2_joint',
+                'wrist_3_joint']
         }]
     )
-    
+
     ld = LaunchDescription()
- 
-    # Declare the launch options
+
+    # declare the launch options
     ld.add_action(declare_urdf_model_path_cmd)
- 
-    # Add any actions
+
+    # add any actions
     ld.add_action(ik_node)
 
     return ld
