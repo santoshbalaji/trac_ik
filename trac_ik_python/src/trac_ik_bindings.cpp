@@ -200,7 +200,9 @@ public:
    * @param upper_boundary(Eigen::VectorXd) - upper limit for the joints
    * @param lower boundary(Eigen::VectorXd) - lower limit for the joints  
    */
-  bool set_joint_limits(Eigen::VectorXd lower_boundary, Eigen::VectorXd upper_boundary)
+  bool set_joint_limits(
+    Eigen::VectorXd lower_boundary,
+    Eigen::VectorXd upper_boundary)
   {
     KDL::JntArray 
       current_lb(chain_ptr_->getNrOfJoints()),

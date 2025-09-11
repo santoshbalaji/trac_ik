@@ -36,6 +36,16 @@ class IKNode(Node):
             self.get_logger().error(f"failed to init trac-ik wrapper: {e}")
 
         self.__current_joint_state  = np.zeros(len(self.__joint_names), dtype=float)
+        self.__current_joint_state[0] = math.radians(74.01)
+        self.__current_joint_state[1] = math.radians(-80.44)
+        self.__current_joint_state[2] = math.radians(64.59)
+        self.__current_joint_state[3] = math.radians(-98.68)
+        self.__current_joint_state[4] = math.radians(-90.89)
+        self.__current_joint_state[5] = math.radians(-15.93)
+
+        lower_boundary = np.array([-0.2, -3.14, -3.14, -3.14, -3.14, -3.14])
+        upper_boundary = np.array([3.87, 3.14, 3.14, 3.14, 3.14, 3.14])
+        self.trac_ik.set_joint_limits(lower_boundary, upper_boundary)
 
         self.create_timer(0.1, self.__tick)
 
