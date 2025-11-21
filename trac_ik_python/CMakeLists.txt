@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(trac_ik_python)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # always keep pybind at first. error is raised if order is changed
 find_package(pybind11_vendor REQUIRED)
 find_package(pybind11 REQUIRED)
@@ -15,7 +19,7 @@ find_package(trac_ik_lib REQUIRED)
 pybind11_add_module(trac_ik_python_module src/trac_ik_bindings.cpp)
 
 target_link_libraries(trac_ik_python_module PRIVATE
-  Eigen3::Eigen     
+  Eigen3::Eigen
   orocos-kdl
   kdl_parser::kdl_parser
   trac_ik_lib::trac_ik_lib)
