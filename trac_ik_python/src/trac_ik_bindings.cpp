@@ -126,16 +126,30 @@ public:
     joint(4) = 0.0;
     joint(5) = 0.0;
 
+    double x = cartesian_position(0);
+    double y = cartesian_position(1);
+    double z = cartesian_position(2);
+    double rx = cartesian_position(3);
+    double ry = cartesian_position(4);
+    double rz = cartesian_position(5);
+
     KDL::Vector kdl_vector(
       cartesian_position(0),
       cartesian_position(1),
       cartesian_position(2));
+  
+    double angle = std::sqrt(rx*rx + ry*ry + rz*rz);
+    KDL::Rotation kdl_rotation;
 
-    KDL::Rotation kdl_rotation = KDL::Rotation::Quaternion(
-      cartesian_position(3),
-      cartesian_position(4),
-      cartesian_position(5),
-      cartesian_position(6));
+    if (angle < 1e-9)
+    {
+      kdl_rotation = KDL::Rotation::Identity();
+    }
+    else
+    {
+      kdl_rotation = KDL::Rotation::Rot(
+        KDL::Vector(rx/angle, ry/angle, rz/angle), angle);
+    }
     
     KDL::Frame desired_pose(kdl_rotation, kdl_vector);
 
